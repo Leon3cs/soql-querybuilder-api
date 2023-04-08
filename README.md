@@ -6,11 +6,11 @@ This is a collection of helper classes that allows developers to create dynamic 
 
 The Querybuilder API makes an Apex dynamic SOQL that looks like this:
 
-![soql-string](/images/soql-string.png)
+![soql-string](/docs/soql-string.png)
 
 Into something like this:
 
-![soql-querybuilder](/images/soql-querybuilder.png)
+![soql-querybuilder](/docs/soql-querybuilder.png)
 
 ## Some key benefits
 
