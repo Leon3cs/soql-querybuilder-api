@@ -168,18 +168,18 @@ public class QueryBuilderClause implements IQueryBuilderClause {
      * .field(Opportunity.StageName)
      * .isLike(LikeType.STARTS_WITH, 'Closed');
      */
-    public QueryBuilderClause isLike(LikeType type, Object value){
+    public QueryBuilderClause isLike(LikeType.types type, Object value){
         String fieldName = this.field.getDescribe().getName();
         
-        if(type == LikeType.STARTS_WITH){
+        if(type == LikeType.types.STARTS_WITH){
             this.clause = fieldName + ' LIKE \'' + String.valueOf(value) + '%\'';
         }
         
-        if(type == LikeType.ENDS_WITH){
+        if(type == LikeType.types.ENDS_WITH){
             this.clause = fieldName + ' LIKE \'%' + String.valueOf(value) + '\'';
         }
         
-        if(type == LikeType.EQUALS){
+        if(type == LikeType.types.EQUALS){
             this.clause = fieldName + ' LIKE \'%' + String.valueOf(value) + '%\'';
         }
         

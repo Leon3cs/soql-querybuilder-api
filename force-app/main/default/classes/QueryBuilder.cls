@@ -27,7 +27,7 @@ public class QueryBuilder implements IQueryBuilder {
      * SELECT <fields>,COUNT(<aggregated_field>) FROM ...
      */
     @TestVisible
-    private Map<Schema.SObjectField, AgreggatorType> aggregatedFields {get;set;}
+    private Map<Schema.SObjectField, AgreggatorType.types> aggregatedFields {get;set;}
     /**
      * @description List of fields ordering the result set
      * Will be used to generate <order_field> in the query as follows
@@ -68,7 +68,7 @@ public class QueryBuilder implements IQueryBuilder {
      * can be ASCENDING_NULLS_FIRST|ASCENDING_NULLS_LAST|DESCENDING_NULLS_FIRST|DESCENDING_NULLS_LAST
      */
     @TestVisible
-    private OrderByType orderBy {get;set;}
+    private OrderByType.types orderBy {get;set;}
     /**
      * @description Number of records to limit the result
      * will generate the <limit> in the query as follows
@@ -140,7 +140,7 @@ public class QueryBuilder implements IQueryBuilder {
      */
     public QueryBuilder(){
         this.fields = new List<Schema.SObjectField>();
-        this.aggregatedFields = new Map<Schema.SObjectField, AgreggatorType>();
+        this.aggregatedFields = new Map<Schema.SObjectField, AgreggatorType.types>();
         this.orderedFields = new List<Schema.SObjectField>();
         this.groupedFields = new List<Schema.SObjectField>();
         this.clauses = new Map<Integer, QueryBuilderClause>();
@@ -189,7 +189,7 @@ public class QueryBuilder implements IQueryBuilder {
      * QueryBuilder builder = new QueryBuilder()
      * .addFieldAggregator(Opportunity.Amount, AgreggatorType.SUM);
      */
-    public QueryBuilder addFieldAggregator(Schema.SObjectField field, AgreggatorType type){
+    public QueryBuilder addFieldAggregator(Schema.SObjectField field, AgreggatorType.types type){
         this.aggregatedFields.put(field,type);
         return this;
     }
@@ -223,7 +223,7 @@ public class QueryBuilder implements IQueryBuilder {
      *      OrderByType.ASCENDING_NULLS_FIRST
      * );
      */
-    public QueryBuilder orderBy(List<Schema.SObjectField> fields, OrderByType type){
+    public QueryBuilder orderBy(List<Schema.SObjectField> fields, OrderByType.types type){
         this.hasOrder = true;
         this.orderedFields.addAll(fields);
         this.orderBy = type;
@@ -534,7 +534,7 @@ public class QueryBuilder implements IQueryBuilder {
         
         if(!this.aggregatedFields.isEmpty()){
             for(Schema.SObjectField field : this.aggregatedFields.keySet()){
-                AgreggatorType type = this.aggregatedFields.get(field);
+                AgreggatorType.types type = this.aggregatedFields.get(field);
                 switch on type {
                     when AVG {
                         aggregatedNames += 'AVG('+field.getDescribe().getName()+'),';

@@ -64,3 +64,4 @@ package.json
 .husky
 
 *.jar
+/doc-gen

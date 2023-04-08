@@ -8,7 +8,7 @@ public class QueryBuilderTest {
         Assert.isInstanceOfType(builder.fields, List<Schema.SObjectField>.class, 'it should match types');
         Assert.isInstanceOfType(builder.orderedFields, List<Schema.SObjectField>.class, 'it should match types');
         Assert.isInstanceOfType(builder.groupedFields, List<Schema.SObjectField>.class, 'it should match types');
-        Assert.isInstanceOfType(builder.aggregatedFields, Map<Schema.SObjectField, AgreggatorType>.class, 'it should match types');
+        Assert.isInstanceOfType(builder.aggregatedFields, Map<Schema.SObjectField, AgreggatorType.types>.class, 'it should match types');
         Assert.isInstanceOfType(builder.clauses, Map<Integer, QueryBuilderClause>.class, 'it should match types');
         Assert.isInstanceOfType(builder.limitBy, Integer.class, 'it should match types');
         Assert.isInstanceOfType(builder.whereExpression, String.class, 'it should match types');
@@ -46,7 +46,7 @@ public class QueryBuilderTest {
     static void shouldAddFieldAggregator(){
         QueryBuilder builder = new QueryBuilder()
             .selectFrom(Opportunity.getSObjectType())
-            .addFieldAggregator(Opportunity.Amount, AgreggatorType.MAX);
+            .addFieldAggregator(Opportunity.Amount, AgreggatorType.types.MAX);
 
         Assert.isFalse(builder.aggregatedFields.isEmpty(), 'it should have added the aggregation');
     }
@@ -67,7 +67,7 @@ public class QueryBuilderTest {
             .selectFrom(Account.getSObjectType())
             .orderBy(new List<Schema.SObjectField>{
                 Account.Name
-            }, OrderByType.ASCENDING_NULLS_LAST);
+            }, OrderByType.types.ASCENDING_NULLS_LAST);
 
         Assert.areEqual(1, builder.orderedFields.size(), 'it should have added the ordering');
         Assert.isTrue(builder.hasOrder, 'it should have changed hasOrder variable to true');
@@ -306,7 +306,7 @@ public class QueryBuilderTest {
     static void shouldValidateAggregatedFields(){
         QueryBuilder builder = new QueryBuilder()
             .addFields(new List<Schema.SObjectField>{Account.Id})
-            .addFieldAggregator(Account.Id, AgreggatorType.AVG)
+            .addFieldAggregator(Account.Id, AgreggatorType.types.AVG)
             .groupBy(Account.Id);
 
         Exception resultException = null;
@@ -325,7 +325,7 @@ public class QueryBuilderTest {
     static void shouldValidateGroupedFields(){
         QueryBuilder builder = new QueryBuilder()
             .addFields(new List<Schema.SObjectField>{Account.Id})
-            .addFieldAggregator(Account.Id, AgreggatorType.AVG);
+            .addFieldAggregator(Account.Id, AgreggatorType.types.AVG);
 
         Exception resultException = null;
 
@@ -397,12 +397,12 @@ public class QueryBuilderTest {
     @IsTest
     static void shouldGetAggregatedFieldNames(){
         QueryBuilder builder = new QueryBuilder()
-            .addFieldAggregator(Opportunity.Amount, AgreggatorType.AVG)
-            .addFieldAggregator(Opportunity.StageName, AgreggatorType.COUNT)
-            .addFieldAggregator(Opportunity.Id, AgreggatorType.COUNT_DISTINCT)
-            .addFieldAggregator(Opportunity.CreatedDate, AgreggatorType.MAX)
-            .addFieldAggregator(Opportunity.LastModifiedDate, AgreggatorType.MIN)
-            .addFieldAggregator(Opportunity.ExpectedRevenue, AgreggatorType.SUM);
+            .addFieldAggregator(Opportunity.Amount, AgreggatorType.types.AVG)
+            .addFieldAggregator(Opportunity.StageName, AgreggatorType.types.COUNT)
+            .addFieldAggregator(Opportunity.Id, AgreggatorType.types.COUNT_DISTINCT)
+            .addFieldAggregator(Opportunity.CreatedDate, AgreggatorType.types.MAX)
+            .addFieldAggregator(Opportunity.LastModifiedDate, AgreggatorType.types.MIN)
+            .addFieldAggregator(Opportunity.ExpectedRevenue, AgreggatorType.types.SUM);
 
         String fieldNames = builder.getAggregatedFieldNames();
 
@@ -449,19 +449,19 @@ public class QueryBuilderTest {
         QueryBuilder builder1 = new QueryBuilder()
             .orderBy(new List<Schema.SObjectField>{
                 Account.Name,Account.Phone
-            }, OrderByType.ASCENDING_NULLS_FIRST);
+            }, OrderByType.types.ASCENDING_NULLS_FIRST);
         QueryBuilder builder2 = new QueryBuilder()
             .orderBy(new List<Schema.SObjectField>{
                 Account.Name,Account.Phone
-            }, OrderByType.ASCENDING_NULLS_LAST);
+            }, OrderByType.types.ASCENDING_NULLS_LAST);
         QueryBuilder builder3 = new QueryBuilder()
             .orderBy(new List<Schema.SObjectField>{
                 Account.Name,Account.Phone
-            }, OrderByType.DESCENDING_NULLS_FIRST);
+            }, OrderByType.types.DESCENDING_NULLS_FIRST);
         QueryBuilder builder4 = new QueryBuilder()
             .orderBy(new List<Schema.SObjectField>{
                 Account.Name,Account.Phone
-            }, OrderByType.DESCENDING_NULLS_LAST);
+            }, OrderByType.types.DESCENDING_NULLS_LAST);
 
         String order1 = builder1.getOrder();
         String order2 = builder2.getOrder();
@@ -495,13 +495,13 @@ public class QueryBuilderTest {
                 Opportunity.Id,
                 Opportunity.Name
             })
-            .addFieldAggregator(Opportunity.Amount, AgreggatorType.COUNT)
+            .addFieldAggregator(Opportunity.Amount, AgreggatorType.types.COUNT)
             .groupBy(Opportunity.Id)
             .groupBy(Opportunity.Name)
             .addWhere(new QueryBuilderClause()
                 .field(Opportunity.StageName)
                 .isEqual('Closed Won'))
-            .orderBy(new List<Schema.SObjectField>{Opportunity.Name}, OrderByType.ASCENDING_NULLS_LAST)
+            .orderBy(new List<Schema.SObjectField>{Opportunity.Name}, OrderByType.types.ASCENDING_NULLS_LAST)
             .limitBy(10);
 
         String expectedQuery = 'SELECT Id,Name,COUNT(Amount) FROM Opportunity WHERE StageName = \'Closed Won\' GROUP BY Id,Name ORDER BY Name ASC NULLS LAST LIMIT 10';

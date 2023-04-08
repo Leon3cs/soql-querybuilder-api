@@ -55,7 +55,7 @@ public interface IQueryBuilderClause {
      * @param value the Object to compare with the field as a String
      * @return the current QueryBuilderClause instance with the clause 
      */
-    QueryBuilderClause isLike(LikeType type, Object value);
+    QueryBuilderClause isLike(LikeType.types type, Object value);
     /**
      * @description Creates a clause using the in operator
      * @param values the list of occurrences to compare with the field

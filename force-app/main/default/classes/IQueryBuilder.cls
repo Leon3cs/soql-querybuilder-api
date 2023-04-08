@@ -25,7 +25,7 @@ public interface IQueryBuilder {
      * @param type the type of aggregation to be used
      * @return the current QueryBuilder instance with the added field aggregation
      */
-    QueryBuilder addFieldAggregator(Schema.SObjectField field, AgreggatorType type);
+    QueryBuilder addFieldAggregator(Schema.SObjectField field, AgreggatorType.types type);
     /**
      * @description Adds a single field to be grouped by
      * @param field the SObjectField to be grouped by
@@ -38,7 +38,7 @@ public interface IQueryBuilder {
      * @param type the type of ordering to be used 
      * @return the current QueryBuilder instance with the added ordering
      */
-    QueryBuilder orderBy(List<Schema.SObjectField> fields, OrderByType type);
+    QueryBuilder orderBy(List<Schema.SObjectField> fields, OrderByType.types type);
     /**
      * @description Adds a limit to the query
      * @param numRecords the amount of records allowed to return by the query

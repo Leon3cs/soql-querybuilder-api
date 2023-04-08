@@ -144,7 +144,7 @@ public class QueryBuilderClauseTest {
     static void shouldGenerateIsLikeExpression(){
         QueryBuilderClause builderStart = new QueryBuilderClause()
             .field(Account.Name)
-            .isLike(LikeType.STARTS_WITH, 'Smith');
+            .isLike(LikeType.types.STARTS_WITH, 'Smith');
 
         Assert.isNotNull(builderStart.clause, 'it should generate a clause');
         Assert.isInstanceOfType(builderStart.clause, String.class, 'it should be a String');
@@ -155,7 +155,7 @@ public class QueryBuilderClauseTest {
 
         QueryBuilderClause builderEnd = new QueryBuilderClause()
             .field(Account.Name)
-            .isLike(LikeType.ENDS_WITH, 'Smith');
+            .isLike(LikeType.types.ENDS_WITH, 'Smith');
 
         Assert.isNotNull(builderEnd.clause, 'it should generate a clause');
         Assert.isInstanceOfType(builderEnd.clause, String.class, 'it should be a String');
@@ -166,7 +166,7 @@ public class QueryBuilderClauseTest {
         
         QueryBuilderClause builderEquals = new QueryBuilderClause()
             .field(Account.Name)
-            .isLike(LikeType.EQUALS, 'Smith');
+            .isLike(LikeType.types.EQUALS, 'Smith');
 
         Assert.isNotNull(builderEquals.clause, 'it should generate a clause');
         Assert.isInstanceOfType(builderEquals.clause, String.class, 'it should be a String');

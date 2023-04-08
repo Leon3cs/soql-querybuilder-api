@@ -4,7 +4,7 @@ This is a collection of helper classes that allows developers to create dynamic 
 
 ## Here's a sneak peak
 
-The Querybuilder API makes an Apex dynamic SOQL like this:
+The Querybuilder API makes an Apex dynamic SOQL that looks like this:
 
 ![soql-string](/images/soql-string.png)
 
@@ -26,4 +26,4 @@ This first version of QueryBuilder API comes with experimental features and some
 ## Project timeline
 
 - First release
-    Initial commit of QueryBuilder API
+    - Initial commit of QueryBuilder API
