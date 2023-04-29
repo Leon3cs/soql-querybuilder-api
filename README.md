@@ -30,5 +30,7 @@ This first version of QueryBuilder API comes with experimental features and some
     - April '23 UPDATE: Introducing subquery support
         Now it's possible to add subqueries to an QueryBuilder instance. the method 'addSubquery' that was previously not implemented is fully functional.
         **Here's an example of how to use it**:
+        
         ![soql-querybuilder-subquery](/docs/soql-querybuilder-subquery.png)
+        
         Check out the QueryBuilder class documentation to learn more about this feature.
