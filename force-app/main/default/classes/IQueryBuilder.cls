@@ -89,7 +89,7 @@ public interface IQueryBuilder {
      */
     QueryBuilder addWhereCustom(List<QueryBuilderClause> clauses, String expression);
     /**
-     * @description Adds a subquery to the main query (not yet implemented)
+     * @description Adds a subquery to the main query
      * @param relatedObject the related object to be selected
      * @param subquery a QueryBuilder instance with the subquery configuration
      * @return the current instance of QueryBuilder with the added subquery

@@ -510,4 +510,227 @@ public class QueryBuilderTest {
 
         Assert.areEqual(expectedQuery, resultQuery, 'Should return the specified');
     }
+
+    @IsTest
+    static void shouldBuildSubquery(){
+        QueryBuilder builder = new QueryBuilder()
+            .selectFrom(Opportunity.getSObjectType())
+            .addFields(new List<Schema.SObjectField>{
+                Opportunity.Id,
+                Opportunity.Name
+            })
+            .addFieldAggregator(Opportunity.Amount, AgreggatorType.types.COUNT)
+            .groupBy(Opportunity.Id)
+            .groupBy(Opportunity.Name)
+            .addWhere(new QueryBuilderClause()
+                .field(Opportunity.StageName)
+                .isEqual('Closed Won'))
+            .orderBy(new List<Schema.SObjectField>{Opportunity.Name}, OrderByType.types.ASCENDING_NULLS_LAST)
+            .limitBy(10);
+            
+        
+        List<Schema.ChildRelationship> relations = Account.getSObjectType().getDescribe().getChildRelationships();
+        
+        Schema.ChildRelationship opportunityRelationShip = null;
+        
+        for(Schema.ChildRelationship childRelation : relations){
+            if(childRelation.getChildSObject().getDescribe().getName() == Opportunity.getSObjectType().getDescribe().getName()){
+                opportunityRelationShip = childRelation;
+                break;
+            }
+        }
+
+        builder.relatedFromObject = opportunityRelationShip;
+
+        String expectedQuery = 'SELECT Id,Name,COUNT(Amount) FROM '+opportunityRelationShip.getRelationshipName()+' WHERE StageName = \'Closed Won\' GROUP BY Id,Name ORDER BY Name ASC NULLS LAST LIMIT 10';
+
+        String resultQuery = builder.buildSubquery();
+
+        Assert.areEqual(expectedQuery, resultQuery, 'Should return the specified');
+    }
+
+    @IsTest
+    static void shouldBuildSubQueries(){
+        QueryBuilder builder = new QueryBuilder()
+        .selectFrom(Account.getSObjectType())
+        .addFields(
+            new List<Schema.SObjectField>{
+                Account.Id,
+                Account.Name
+            }
+        )
+        .addSubquery(
+            Opportunity.getSObjectType(),
+            new QueryBuilder()
+            .selectFrom(Opportunity.getSObjectType())
+            .addFields(
+                new List<Schema.SObjectField>{
+                    Opportunity.Id,
+                    Opportunity.Name
+                }
+            )
+        )
+        .addSubquery(
+            Contact.getSObjectType(),
+            new QueryBuilder()
+            .selectFrom(Contact.getSObjectType())
+            .addFields(
+                new List<Schema.SObjectField>{
+                    Contact.Id,
+                    Contact.Name
+                }
+            )
+        );
+
+        String expectedQuery = ',(SELECT Id,Name FROM Opportunities),(SELECT Id,Name FROM Contacts)';
+
+        Assert.areEqual(expectedQuery, builder.getSubqueries());
+    }
+
+    @IsTest
+    static void shouldAddSubqueries(){
+        QueryBuilder builder = new QueryBuilder()
+        .selectFrom(Account.getSObjectType())
+        .addFields(
+            new List<Schema.SObjectField>{
+                Account.Id,
+                Account.Name
+            }
+        )
+        .addSubquery(
+            Opportunity.getSObjectType(),
+            new QueryBuilder()
+            .selectFrom(Opportunity.getSObjectType())
+            .addFields(
+                new List<Schema.SObjectField>{
+                    Opportunity.Id,
+                    Opportunity.Name
+                }
+            )
+        )
+        .addSubquery(
+            Contact.getSObjectType(),
+            new QueryBuilder()
+            .selectFrom(Contact.getSObjectType())
+            .addFields(
+                new List<Schema.SObjectField>{
+                    Contact.Id,
+                    Contact.Name
+                }
+            )
+        );
+
+        Assert.isFalse(builder.subQueries.isEmpty(), 'Should add multiple subqueries');
+
+        QueryBuilder builderDuplicate = new QueryBuilder()
+        .selectFrom(Account.getSObjectType())
+        .addFields(
+            new List<Schema.SObjectField>{
+                Account.Id,
+                Account.Name
+            }
+        )
+        .addSubquery(
+            Opportunity.getSObjectType(),
+            new QueryBuilder()
+            .selectFrom(Opportunity.getSObjectType())
+            .addFields(
+                new List<Schema.SObjectField>{
+                    Opportunity.Id,
+                    Opportunity.Name
+                }
+            )
+        );
+
+        Exception duplicateException = null;
+
+        try{
+            builderDuplicate
+            .addSubquery(
+                Opportunity.getSObjectType(),
+                new QueryBuilder()
+                .selectFrom(Opportunity.getSObjectType())
+                .addFields(
+                    new List<Schema.SObjectField>{
+                        Opportunity.Id,
+                        Opportunity.Name
+                    }
+                )
+            );
+        }catch(Exception ex){
+            duplicateException = ex;
+        }
+
+        String expectedDuplicateMessage = 'Duplicate subquery for object: '+Opportunity.getSObjectType().getDescribe().getName();
+
+        Assert.isNotNull(duplicateException, 'Should catch exception');
+        Assert.areEqual(expectedDuplicateMessage, duplicateException.getMessage(), 'Should match the exception message');
+
+        QueryBuilder builderInvalid = new QueryBuilder()
+        .selectFrom(Account.getSObjectType())
+        .addFields(
+            new List<Schema.SObjectField>{
+                Account.Id,
+                Account.Name
+            }
+        );
+
+        Exception invalidException = null;
+
+        try{
+            builderInvalid
+            .addSubquery(
+                Contact.getSObjectType(),
+                new QueryBuilder()
+                .selectFrom(Opportunity.getSObjectType())
+                .addFields(
+                    new List<Schema.SObjectField>{
+                        Opportunity.Id,
+                        Opportunity.Name
+                    }
+                )
+            );
+        }catch(Exception ex){
+            invalidException = ex;
+        }
+
+        String expectedInvalidMessage = 'Invalid subquery: the object to make the subquery must match the related object. Expected: ' +
+        Contact.getSObjectType().getDescribe().getName() +
+        ' Actual: ' + Opportunity.getSObjectType().getDescribe().getName();
+
+        Assert.isNotNull(invalidException, 'Should catch exception');
+        Assert.areEqual(expectedInvalidMessage, invalidException.getMessage(), 'Should match the exception message');
+
+        QueryBuilder builderNoRelation = new QueryBuilder()
+        .selectFrom(Account.getSObjectType())
+        .addFields(
+            new List<Schema.SObjectField>{
+                Account.Id,
+                Account.Name
+            }
+        );
+
+        Exception noRelationException = null;
+            
+        try{
+            builderNoRelation
+            .addSubquery(
+                AssetAction.getSObjectType(),
+                new QueryBuilder()
+                .selectFrom(AssetAction.getSObjectType())
+                .addFields(
+                    new List<Schema.SObjectField>{
+                        AssetAction.Id
+                    }
+                )
+            );
+        }catch(Exception ex){
+            noRelationException = ex;
+        }
+
+        String expectedNoRelationMessage = 'Invalid subquery for related object ' + AssetAction.getSObjectType().getDescribe().getName();
+
+        Assert.isNotNull(noRelationException, 'Should catch exception');
+        Assert.areEqual(expectedNoRelationMessage, noRelationException.getMessage(), 'Should match the exception message');
+    }
 }

@@ -15,6 +15,13 @@ public class QueryBuilder implements IQueryBuilder {
     @TestVisible
     private Schema.SObjectType fromObject {get;set;}
     /**
+     * @description When a QueryBuilder instance is used to act as subquery
+     * the relatedFromObject will gather information about the relationship with
+     * this SObjectType to the parent SObjectType in the a main QueryBuilder instance 
+     */
+    @TestVisible
+    private Schema.ChildRelationship relatedFromObject {get;set;}
+    /**
      * @description A list of SObjectFields to select in the query
      * Will be used to generate the <fields> in the query as follows
      * SELECT <fields> FROM ...
@@ -76,6 +83,11 @@ public class QueryBuilder implements IQueryBuilder {
      */
     @TestVisible
     private Integer limitBy {get;set;}
+    /**
+     * @description Indicates if the QueryBuilder instance has one or more subqueries
+     */
+    @TestVisible
+    private Boolean hasSubquery {get;set;}
     /**
      * @description Indicates if the QueryBuilder instance has added ordering
      */
@@ -144,12 +156,14 @@ public class QueryBuilder implements IQueryBuilder {
         this.orderedFields = new List<Schema.SObjectField>();
         this.groupedFields = new List<Schema.SObjectField>();
         this.clauses = new Map<Integer, QueryBuilderClause>();
+        this.subQueries = new Map<Schema.SObjectType, QueryBuilder>();
         this.limitBy = 0;
         this.whereExpression = '';
         this.hasOrder = false;
         this.hasLimit = false;
         this.hasWhere = false;
         this.hasGroup = false;
+        this.hasSubquery = false;
     }
     
     /**
@@ -425,12 +439,32 @@ public class QueryBuilder implements IQueryBuilder {
      * @param subquery a QueryBuilder instance with the subquery configuration
      * @return the current instance of QueryBuilder with the added subquery
      * @example
-     * !--- examples unavailable ---!
-     * (method not yet implemented properly)
+     * QueryBuilder builder = new QueryBuilder()
+     * .selectFrom(Account.SObjectType)
+     * .addFields(new List<Schema.SObjectField>{
+     *      Account.Id,
+     *      Account.Name
+     * })
+     * .addSubquery(Oppotunity.SObjectType, 
+     *      new QueryBuilder()
+     *          .selectFrom(Opportunity.SObjectType)
+     *          .addFields(new List<Schema.SObjectType>{
+     *              Oppotunity.Id,
+     *              Oppotunity.Name
+     *          }))
      */
     public QueryBuilder addSubquery(Schema.SObjectType relatedObject, QueryBuilder subquery){
+        this.hasSubquery = true;
         if(!this.subQueries.containsKey(relatedObject)){
-            this.subQueries.put(relatedObject,subquery);
+            if(relatedObject.getDescribe().getName() != subquery.fromObject.getDescribe().getName()){
+                throw new SubqueryException(
+                    'Invalid subquery: the object to make the subquery must match the related object. Expected: ' +
+                    relatedObject.getDescribe().getName() +
+                    ' Actual: ' + subquery.fromObject.getDescribe().getName()
+                );
+            }
+            QueryBuilder updatedSubquery = setSubqueryObject(this, subquery, relatedObject);
+            this.subQueries.put(relatedObject,updatedSubquery);
         }else{
             throw new SubqueryException('Duplicate subquery for object: '+relatedObject.getDescribe().getName());
         }
@@ -565,7 +599,8 @@ public class QueryBuilder implements IQueryBuilder {
      * @description Builds the where expression to filter the selection
      * @return a string with expressions
      */
-    public String getWhereClause(){
+    @TestVisible
+    private String getWhereClause(){
         String whereClause = this.whereExpression;
         
         Integer size = this.clauses.size();
@@ -581,7 +616,8 @@ public class QueryBuilder implements IQueryBuilder {
      * @description Builds the list of field names to the query be ordered with
      * @return a string with fields names and the type of ordering
      */
-    public String getOrder(){
+    @TestVisible
+    private String getOrder(){
         String orderByFields = '';
         String order = '';
         
@@ -615,7 +651,8 @@ public class QueryBuilder implements IQueryBuilder {
      * @description Builds a string of field names to group by
      * @return a string of comma separated field names
      */
-    public String getGroups(){
+    @TestVisible
+    private String getGroups(){
         String groups = '';
         
         if(!this.groupedFields.isEmpty()){
@@ -625,6 +662,53 @@ public class QueryBuilder implements IQueryBuilder {
         }
         
         return groups.substringBeforeLast(',');
+    }
+    
+    /**
+     * @description Prepares a subquery to select according to the related object`s relationshp name
+     * @param parentQuery the parent query which will receive a subquery
+     * @param childQuery the subquery to add the correct relationship name
+     * @param relatedObject the related object to get relationship data from
+     * @return the child subquery updated with the relationship configuration neeed to build the subquery in string format
+     */
+    @TestVisible
+    private QueryBuilder setSubqueryObject(QueryBuilder parentQuery, QueryBuilder childQuery, Schema.SObjectType relatedObject){
+        List<Schema.ChildRelationship> validRelatedObjects = parentQuery.fromObject.getDescribe().getChildRelationships();
+        Schema.ChildRelationship relatedObjectRelationship = null;
+        
+        for(Schema.ChildRelationship relation : validRelatedObjects){
+            if(relation.getChildSObject().getDescribe().getName() == relatedObject.getDescribe().getName()){
+                relatedObjectRelationship = relation;
+                break;
+            }
+        }
+        
+        if(relatedObjectRelationship == null){
+            throw new SubqueryException('Invalid subquery for related object ' + relatedObject.getDescribe().getName());
+        }
+        
+        childQuery.relatedFromObject = relatedObjectRelationship;
+        
+        return childQuery;
+    }
+    
+    /**
+     * @description builds the list of subqueries added to the parent QueryBuilder
+     * @return a string with comma separated subqueries
+     */
+    @TestVisible
+    private String getSubqueries(){
+        String subQueryString = ',';
+        
+        List<QueryBuilder> subqueries = this.subQueries.values();
+        
+        for(QueryBuilder builder : subqueries){
+            subQueryString += '(';
+            subQueryString += builder.buildSubquery();
+            subQueryString += '),';
+        }
+        
+        return subQueryString.substringBeforeLast(',');
     }
     
     /**
@@ -665,9 +749,59 @@ public class QueryBuilder implements IQueryBuilder {
         
         query += getAggregatedFieldNames();
         
+        if(this.hasSubquery){
+            query += getSubQueries();
+        }
+        
         query += ' FROM ';
         
         query += this.fromObject.getDescribe().getName();
+        
+        if(this.hasWhere){
+            query += ' WHERE ' + getWhereClause();
+        }
+        
+        if(this.hasGroup){
+            query += ' GROUP BY ' + getGroups();
+        }
+
+        if(this.hasOrder){
+            query += ' ORDER BY ' + getOrder();
+        }
+        
+        if(this.hasLimit){
+            query += ' LIMIT ' + String.valueOf(this.limitBy);
+        }
+        
+        return query;
+    }
+    
+    /**
+     * @description After making all the necessary validations, the basic subquery 
+     * is built and optional parameters like WHERE clauses, limits, order and groups
+     * are inserted into the query if they are present in the builder configuration,
+     * and the FROM object is replaced with the related object relationship name.
+     * The subqueries are appended to the main query and will appear along with the 
+     * selected fields. 
+     * @return the string representation of a subquery.
+     */
+    @TestVisible
+    private String buildSubquery(){
+        validateObjectAccessibility();
+        validateFieldsAccessibility();
+        validateAggregatedFields();
+        validateGroupedFields();
+        validateWhereExpression();
+        
+        String query = 'SELECT ';
+        
+        query += getFieldNames();
+        
+        query += getAggregatedFieldNames();
+        
+        query += ' FROM ';
+        
+        query += this.relatedFromObject.getRelationshipName();
         
         if(this.hasWhere){
             query += ' WHERE ' + getWhereClause();
